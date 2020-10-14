@@ -33,6 +33,7 @@ public:
 
 	size_t getNumJoints() const { return mJoints.size(); }
 
+
 protected:
 	std::vector<AJoint*> mJoints;
 	int mJointCount = 0;

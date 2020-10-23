@@ -1138,7 +1138,7 @@ quat quat::SDouble(const quat& a, const quat& b)
 {
     quat q = a;
     //TODO: student implementation ofSDouble goes here
-    q = 2 * Dot(a, b) * (b - a);
+    q = 2 * Dot(a, b) * b - a;
     return q.Normalize();
 }
 

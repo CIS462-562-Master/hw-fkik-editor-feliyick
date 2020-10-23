@@ -148,8 +148,8 @@ void ASplineQuat::computeControlPoints(quat& startQuat, quat& endQuat)
 		q0Star = q0Star.SBisect(q0, q0Prime);
 		b0 = q0;
 		b3 = q1;
-		b1 = b1.Slerp(q0, q1Star, 1 / 3);
-		b2 = b2.Slerp(q1, q0Star, 1 / 3);
+		b1 = b1.Slerp(q0, q1Star, 1.f / 3.f);
+		b2 = b2.Slerp(q1, q0Star, 1.f / 3.f);
 
 		// TODO: student implementation goes here
 		//  Given the quaternion keys q_1, q0, q1 and q2 associated with a curve segment, compute b0, b1, b2, b3 

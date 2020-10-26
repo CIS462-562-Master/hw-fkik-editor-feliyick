@@ -107,7 +107,9 @@ void AActor::updateGuideJoint(vec3 guideTargetPos)
 	vec3 root_worldV = m_Guide.getLocal2Global() * root_guideV;
 
 	vec3 guide_worldV = m_Guide.getGlobalTranslation();
-	vec3 tar = (guideTargetPos - guide_worldV).Normalize();
+	vec3 tar = (guideTargetPos - guide_worldV);
+	tar[1] = 0.f;
+	tar = tar.Normalize();
 
 	m_Guide.setGlobalTranslation(vec3(root_worldV[0], 0.f, root_worldV[2]));
 
@@ -115,48 +117,55 @@ void AActor::updateGuideJoint(vec3 guideTargetPos)
 	m_pSkeleton->update();
 }
 
+
 void AActor::solveFootIK(float leftHeight, float rightHeight, bool rotateLeft, bool rotateRight, vec3 leftNormal, vec3 rightNormal)
 {
-	if (!m_pSkeleton->getRootNode()) { return; }
+	//if (!m_pSkeleton->getRootNode()) { return; }
 	AJoint* leftFoot = m_pSkeleton->getJointByID(m_IKController->mLfootID);
 	AJoint* rightFoot = m_pSkeleton->getJointByID(m_IKController->mRfootID);
 
 	// TODO: 
 	// The normal and the height given are in the world space
 
-	// 1.	Update the local translation of the root based on the left height and the right height
+	// 1. Update the local translation of the root based on the left height and the right height
 	AJoint* root = m_pSkeleton->getRootNode();
-	vec3 hL = root->getLocalTranslation() + vec3(0, leftHeight, 0);
-	vec3 hR = root->getLocalTranslation() + vec3(0, rightHeight, 0);
-	root->setLocalTranslation(Max(hL, hR));
 
+	vec3 hL = root->getGlobalTranslation() + vec3(0, leftHeight, 0);
+	vec3 hR = root->getGlobalTranslation() + vec3(0, rightHeight, 0);
+	root->setLocalTranslation(Min(hL, hR));
 
-	// 2.	Update the character with Limb-based IK 
+	// 2. Update the character with Limb-based IK 
+	ATarget lTarget = ATarget();
+	ATarget rTarget = ATarget();
 	
+	vec3 newPosL = leftFoot->getGlobalTranslation() + vec3(0.f, leftHeight, 0.f);
+	vec3 newPosR = rightFoot->getGlobalTranslation() + vec3(0.f, rightHeight, 0.f);
+	lTarget.setLocalTranslation(newPosL);
+	rTarget.setLocalTranslation(newPosR);
+	m_IKController->IKSolver_Limb(m_IKController->mLfootID, lTarget);
+	m_IKController->IKSolver_Limb(m_IKController->mRfootID, rTarget);
+
+	m_pSkeleton->update();
+
 	// Rotate Foot
 	if (rotateLeft)
 	{
 		// Update the local orientation of the left foot based on the left normal
 
-		ATarget lTarget = ATarget();
 		vec3 xAxis = (leftFoot->getLocalRotation().GetCol(0)).Normalize();
-		vec3 newZ = (leftNormal.Cross(xAxis)).Normalize();
-		lTarget.setLocalRotation(mat3(xAxis, leftNormal.Normalize(), newZ).Transpose());
-		
-		
-		m_IKController->computeLimbIK(lTarget, m_IKController->createIKchain(leftFoot->getID(), 3, m_pSkeleton), 
-			xAxis, m_pSkeleton);
+		vec3 newZ = (xAxis.Cross(leftNormal)).Normalize();
+		leftFoot->setLocalRotation(mat3(xAxis, leftNormal.Normalize(), newZ).Transpose());
+
 	}
 	if (rotateRight)
 	{
 		// Update the local orientation of the right foot based on the right normal
-		ATarget rTarget = ATarget();
+
 		vec3 xAxis = (rightFoot->getLocalRotation().GetCol(0)).Normalize();
-		vec3 newZ = (rightNormal.Cross(xAxis)).Normalize();
-		rTarget.setLocalRotation(mat3(xAxis, rightNormal.Normalize(), newZ).Transpose());
-		
-		m_IKController->computeLimbIK(rTarget, m_IKController->createIKchain(rightFoot->getID(), 3, m_pSkeleton),
-			xAxis, m_pSkeleton);
+		vec3 newZ = (xAxis.Cross(rightNormal)).Normalize();
+		rightFoot->setLocalRotation(mat3(xAxis, rightNormal.Normalize(), newZ).Transpose());
+
+
 	}
-	m_pSkeleton->update();
+
 }
